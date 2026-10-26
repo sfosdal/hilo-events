@@ -4331,5 +4331,4 @@
   // a ?team= link opens the Teams view straight away
   if (new URLSearchParams(location.search).get('team')) setTeamsView(new URLSearchParams(location.search).get('team'), false);
   window.LQAHooks = { dayItems: dayItems, byDate: function () { return state.byDate; }, boardEntry: boardEntry, closeDayPop: closeDayPop, syncViewSwitch: syncViewSwitch, fitFilterBar: fitFilterBar, todayStr: todayStr, venueColor: venueColor }; // what local-map.js borrows
-
 })();

@@ -9,6 +9,13 @@
 //     lakes and rivers and the main roads inside `bbox` from OpenStreetMap
 //     (© OpenStreetMap contributors, ODbL — the page credits them), read once
 //     from the Overpass API; the frame is the bbox. lqa, Seattle.
+//   kind: 'world'  — the countries from Natural Earth 1:50m, the great lakes
+//     and, for the countries `states` names, their states and provinces as
+//     faint lines, on a Miller cylindrical projection inside `bbox`
+//     [south, west, north, east]; `home` is the box the view opens on. A site
+//     whose events are spread over continents (curling.events, 2026-10-24),
+//     whose pins are the places the events name (`pins: 'places'`) rather
+//     than rooms — so a room with geo is not required here.
 //
 // Both read-throughs are cached in .cache/ (gitignored) and the output is
 // committed: the Actions build never downloads anything. The labels (towns,
@@ -31,7 +38,7 @@ globalThis.window = globalThis; createRequire(import.meta.url)(path.join(root, '
 const CITY = globalThis.LQACity, M = CITY.map;
 if (!M) { console.error('city.js has no map block — nothing to draw'); process.exit(1); }
 const rooms = Object.keys(CITY.venues).filter(v => CITY.venues[v].geo);
-if (!rooms.length) { console.error('no room in city.js carries geo: [lat, lon]'); process.exit(1); }
+if (!rooms.length && M.pins !== 'places') { console.error('no room in city.js carries geo: [lat, lon]'); process.exit(1); }
 
 async function cached(name, fetcher) {
   await mkdir(cache, { recursive: true });
@@ -43,16 +50,17 @@ async function cached(name, fetcher) {
 const W = 1000;
 let proj, ground;
 const toLabel = px => (l) => ({ name: l.name, kind: l.kind || 'town', anchor: l.anchor || 'start', dy: l.dy, xy: px([l.lon, l.lat]).map(v => +fmt(v)) });
+// a Natural Earth layer: the here.events map's copy when this Mac has it, else one download, cached
+const SISTER_DIR = path.join(process.env.HOME || '', 'Desktop/projects/here-events/repo/.cache');
+const naturalEarth = (NAME) => cached(NAME + '.geojson', async () => {
+  try { return JSON.parse(await readFile(path.join(SISTER_DIR, NAME + '.geojson'), 'utf8')); } catch { /* no sister copy */ }
+  const r = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/' + NAME + '.geojson', { headers: { 'User-Agent': UA } });
+  if (!r.ok) throw new Error(`Natural Earth download failed: HTTP ${r.status}`);
+  return r.json();
+});
 
 if (M.kind === 'island') {
-  const NAME = 'ne_10m_admin_0_countries';
-  const SISTER = path.join(process.env.HOME || '', 'Desktop/projects/here-events/repo/.cache', NAME + '.geojson'); // the here.events map's copy, when this Mac has it
-  const g = await cached(NAME + '.geojson', async () => {
-    try { await access(SISTER); return JSON.parse(await readFile(SISTER, 'utf8')); } catch { /* no sister copy */ }
-    const r = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/' + NAME + '.geojson', { headers: { 'User-Agent': UA } });
-    if (!r.ok) throw new Error(`Natural Earth download failed: HTTP ${r.status}`);
-    return r.json();
-  });
+  const g = await naturalEarth('ne_10m_admin_0_countries');
   const inside = (ring, x, y) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
   const polys = g.features.filter(f => !M.country || f.properties.ADM0_A3 === M.country).flatMap(f => f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates]);
   const ringAt = ([lat, lon]) => { const p = polys.find(p => inside(p[0], lon, lat)); if (!p) throw new Error(`no land at ${lat}, ${lon}`); return p[0]; };
@@ -105,11 +113,36 @@ if (M.kind === 'island') {
   ground = { sea: sea.rings.map(r => pathOf(r)), water: waterRings.map(r => pathOf(r)), roads: Object.fromEntries(Object.entries(roads).map(([c, d]) => [c, d.join('')])), labels: (M.labels || []).map(toLabel(px)), home,
     credit: 'Shoreline, waters and roads © OpenStreetMap contributors, ODbL.' };
   console.log(`urban: ${coast.length} coast chain(s) → ${sea.rings.length} sea ring(s), ${waterRings.length} waters, roads ${Object.entries(roads).map(([c, d]) => c + ' ' + d.length).join(', ')}`);
-} else throw new Error(`map.kind ${M.kind}: island or urban`);
+} else if (M.kind === 'world') {
+  const [S, Wl, N, E] = M.bbox;
+  const mil = lat => 1.25 * Math.asinh(Math.tan(.8 * lat * Math.PI / 180)) * 180 / Math.PI; // Miller cylindrical, in degree-sized units
+  const cx = (Wl + E) / 2, s = W / (E - Wl), my0 = mil(N), H = Math.round((my0 - mil(S)) * s);
+  proj = { kind: 'miller', cx, cy: (S + N) / 2, k: 1, s, w: W, h: H, my0 };
+  const px = ([lon, lat]) => [(lon - cx) * s + W / 2, (my0 - mil(lat)) * s];
+  const wide = { x0: -W * .2, y0: -H * .2, x1: W * 1.2, y1: H * 1.2 };
+  const tol = M.tolerance ?? 0.5, minArea = M.minArea ?? 3;
+  const inFrame = r => r.some(p => p[0] > wide.x0 && p[0] < wide.x1 && p[1] > wide.y0 && p[1] < wide.y1);
+  const rings = f => (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates]);
+  // every polygon of a layer as one path (its holes too, drawn evenodd), simplified, the slivers and the far-off dropped
+  const paths = (features) => features.flatMap(f => rings(f).map(poly => poly.map(r => simplify(r.map(px), tol)).filter((r, i) => r.length > 3 && (i === 0 ? inFrame(r) && Math.abs(signedArea(r)) >= minArea : Math.abs(signedArea(r)) >= minArea))).filter(poly => poly.length)).map(poly => poly.map(r => pathOf(r)).join(''));
+  const countries = await naturalEarth('ne_50m_admin_0_countries');
+  const land = paths(countries.features.filter(f => f.properties.ADM0_A3 !== 'ATA'));
+  const lakes = await naturalEarth('ne_50m_lakes');
+  const water = paths(lakes.features.filter(f => (f.properties.scalerank ?? 9) <= (M.lakes ?? 1)));
+  let borders = '';
+  if (M.states && M.states.length) {
+    const adm1 = await naturalEarth('ne_50m_admin_1_states_provinces');
+    borders = paths(adm1.features.filter(f => M.states.includes(f.properties.adm0_a3))).join('');
+  }
+  let home = null;
+  if (M.home) { const [hs, hw, hn, he] = M.home, a = px([hw, hn]), b = px([he, hs]); home = [a[0], a[1], b[0] - a[0], b[1] - a[1]].map(v => +fmt(v)); }
+  ground = { land, water, borders, labels: (M.labels || []).map(toLabel(px)), home, credit: 'Countries, lakes and state lines from Natural Earth, 1:50m, public domain.' };
+  console.log(`world: ${land.length} land path(s), ${water.length} lake(s), state lines for ${(M.states || []).join(', ') || 'no one'}`);
+} else throw new Error(`map.kind ${M.kind}: island, urban or world`);
 
 const out = { kind: M.kind, proj, ...ground };
-const outside = rooms.filter(v => { const [lat, lon] = CITY.venues[v].geo, [x, y] = [(lon - proj.cx) * proj.k * proj.s + W / 2, (proj.cy - lat) * proj.s + proj.h / 2]; return x < 0 || x > W || y < 0 || y > proj.h; });
+const outside = rooms.filter(v => { const [lat, lon] = CITY.venues[v].geo, x = (lon - proj.cx) * proj.k * proj.s + W / 2, y = proj.kind === 'miller' ? (proj.my0 - 1.25 * Math.asinh(Math.tan(.8 * lat * Math.PI / 180)) * 180 / Math.PI) * proj.s : (proj.cy - lat) * proj.s + proj.h / 2; return x < 0 || x > W || y < 0 || y > proj.h; });
 if (outside.length) console.log(`off the frame: ${outside.join(', ')}`);
 await writeFile(path.join(root, 'site', 'local-map.json'), JSON.stringify(out));
 const size = Buffer.byteLength(JSON.stringify(out));
-console.log(`local-map.json: frame ${W}×${proj.h}, ${rooms.length} rooms placed, ${(size / 1024).toFixed(0)} KB`);
+console.log(`local-map.json: frame ${W}×${proj.h}, ${M.pins === 'places' ? 'pins at the places the events name' : rooms.length + ' rooms placed'}, ${(size / 1024).toFixed(0)} KB`);
