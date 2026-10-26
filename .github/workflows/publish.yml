@@ -1,0 +1,32 @@
+name: publish the Big Island redirect
+# hilo.here.events was Hilo Events' host for one day (2026-10-25); the Kona and Hilo
+# calendars merged into bigisland.here.events that night. This stub keeps the old
+# host alive with a page that sends readers on (index.html, 404.html). Nothing is
+# built; nothing runs on a schedule (this file replaced the daily build workflow).
+# The retired build stays in the git history (the events-archive branch too).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir -p out && cp index.html 404.html out/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+      - id: deployment
+        uses: actions/deploy-pages@v4

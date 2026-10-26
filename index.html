@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Hilo Events is now Big Island Events</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<script>
+// hilo.here.events was Hilo Events' host for one day (2026-10-25); the Kona and
+// Hilo calendars merged that night into bigisland.here.events, one site for
+// the whole of Hawaiʻi Island (Steve: "they should both show the same
+// content"). Send the reader on with the path and hash intact; the share code
+// (?f=…) is dropped — the merged site's registry is new, so an old code would
+// pick the wrong rooms. GitHub Pages has no server-side redirect, so this stub
+// (index.html and 404.html alike) does it in the page.
+var q = new URLSearchParams(location.search); q.delete('f');
+location.replace('https://bigisland.here.events' + location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+</script>
+<meta http-equiv="refresh" content="0; url=https://bigisland.here.events/">
+<link rel="canonical" href="https://bigisland.here.events/">
+<style>body{font:16px/1.5 system-ui,sans-serif;background:#141a20;color:#eee;margin:0;min-height:100vh;display:grid;place-items:center}a{color:#f08a33}</style>
+</head><body><p>Hilo Events is now part of <a href="https://bigisland.here.events/">Big Island Events</a>.</p></body></html>
