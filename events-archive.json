@@ -89,11 +89,51 @@
    "type": "concert"
   },
   {
+   "venue": "Volcano Art Center",
+   "title": "Aloha Friday Cultural Activities — Gallery",
+   "date": "2026-10-02",
+   "time": "11:00",
+   "url": "https://volcanoartcenter.org/ep-events/aloha-friday-cultural-activities-9/",
+   "type": "arts"
+  },
+  {
+   "venue": "Volcano Art Center",
+   "title": "Thursday Night at the Center: VAC Voices",
+   "date": "2026-10-08",
+   "time": "17:00",
+   "url": "https://volcanoartcenter.org/ep-events/thursday-night-at-the-center-vac-voices-october-8th-at-5pm/",
+   "type": "arts"
+  },
+  {
    "venue": "UH Hilo Performing Arts Center",
    "title": "Tomáš Kubínek - Miracle Man",
    "date": "2026-10-08",
    "time": "19:00",
    "url": "https://hilo.hawaii.edu/news/view/17469",
+   "type": "arts"
+  },
+  {
+   "venue": "Volcano Art Center",
+   "title": "Aloha Friday Cultural Activities — Gallery",
+   "date": "2026-10-09",
+   "time": "11:00",
+   "url": "https://volcanoartcenter.org/ep-events/aloha-friday-cultural-activities-10/",
+   "type": "arts"
+  },
+  {
+   "venue": "Volcano Art Center",
+   "title": "Hula in the Park — Gallery",
+   "date": "2026-10-10",
+   "time": "10:30",
+   "url": "https://volcanoartcenter.org/ep-events/hula-in-the-park-2/",
+   "type": "arts"
+  },
+  {
+   "venue": "Volcano Art Center",
+   "title": "Concert: A Tribute to Bob Dylan by the Ing Crowd",
+   "date": "2026-10-10",
+   "time": "17:30",
+   "url": "https://volcanoartcenter.org/ep-events/concert-a-tribute-to-bob-dylan-by-the-ing-crowd/",
    "type": "arts"
   },
   {
@@ -103,6 +143,30 @@
    "time": "19:00",
    "url": "https://www.hawaiiconcertsociety.org/2026-27-season",
    "type": "concert"
+  },
+  {
+   "venue": "Volcano Art Center",
+   "title": "Aloha Friday Cultural Activities — Gallery",
+   "date": "2026-10-16",
+   "time": "11:00",
+   "url": "https://volcanoartcenter.org/ep-events/aloha-friday-cultural-activities-11/",
+   "type": "arts"
+  },
+  {
+   "venue": "Volcano Art Center",
+   "title": "VAC Annual Forest Fair",
+   "date": "2026-10-17",
+   "time": "10:00",
+   "url": "https://volcanoartcenter.org/ep-events/vac-annual-forest-fair/",
+   "type": "arts"
+  },
+  {
+   "venue": "Volcano Art Center",
+   "title": "Aloha Friday Cultural Activities — Gallery",
+   "date": "2026-10-23",
+   "time": "11:00",
+   "url": "https://volcanoartcenter.org/ep-events/aloha-friday-cultural-activities-12/",
+   "type": "arts"
   },
   {
    "venue": "Honokaʻa People’s Theatre",
